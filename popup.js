@@ -1,30 +1,40 @@
 'use strict';
 
+function disableButtons() {
+    $('#follow_1').prop('disabled',true);
+    $('#follow_3').prop('disabled',true);
+    $('#follow_10').prop('disabled',true);
+}
+function enableButtons() {
+    $('#follow_1').prop('disabled',false);
+    $('#follow_3').prop('disabled',false);
+    $('#follow_10').prop('disabled',false);
+}
 document.addEventListener('DOMContentLoaded', function () {
-    $('#get_links').click(function (e) {
-        console.log("get_links clicked");
-    })
     $('#follow_1').click(function (e) {
-        console.log("follow_1 clicked");
+        disableButtons();
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {text: 'do_follow', count: 1}, function(response) {
-                console.log("follow_1 callback");
+                console.log("re-enable");
+                enableButtons();
             });
         });
     })
     $('#follow_3').click(function (e) {
-        console.log("follow_3 clicked");
+        disableButtons();
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {text: 'do_follow', count: 3}, function(response) {
-                console.log("follow_3 callback");
+                console.log("re-enable");
+                enableButtons();
             });
         });
     })
     $('#follow_10').click(function (e) {
-        console.log("follow_10 clicked");
+        disableButtons();
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {text: 'do_follow', count: 10}, function(response) {
-                console.log("follow_10 callback");
+                console.log("re-enable");
+                enableButtons();
             });
         });
     })

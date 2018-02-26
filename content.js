@@ -16,6 +16,26 @@ function clickFollowButton(element) {
     dispatchMouseEvent(element, 'mouseup', true, true);
 }
 
+function asyncQueue(stopOnError) {
+    // a resolved promise, which acts as the seed of a .then() chain (ie a "queue").
+    var p = $.when(); 
+    return function(fn) {
+        p = p
+          .then(null, function() { if(!stopOnError) return $.when(); }) // prevent propagation of a previous error down the chain.
+          .then(fn);
+        return p;
+    }
+}
+function successHandler(i) {
+    console.log('success: ' + i);
+}
+function errorHandler() {
+    console.log('error:');
+}
+function goodDelay() { // simulate a successful request
+    return $.Deferred(function(dfrd){ setTimeout(dfrd.resolve, 1000); });
+}
+
 // listener
 chrome.runtime.onMessage.addListener(
     function (msg, sender, sendResponse) {
@@ -43,7 +63,8 @@ chrome.runtime.onMessage.addListener(
                     count = links.length;
                 }
 
-                // queue with increasing timeout
+                // create queue with increasing timeout
+                var queue = asyncQueue(false);
                 for (i = 0; i < count; i++) {
                     var randomdelay = Math.ceil(Math.random() * 10) + 1;
                     var fixeddelay = 3 * i;
@@ -51,8 +72,19 @@ chrome.runtime.onMessage.addListener(
                     console.log("delay: " + delay);
                     var element = links[i];                    
                     console.log("element: " + element);
-                    setTimeout(clickFollowButton, delay, element);
+                    //var f = function() { setTimeout(clickFollowButton, delay, element); }
+                    var f = $.Deferred(function(dfrd) { setTimeout(clickFollowButton, delay, element);});
+                    //funqueue.push(f)
+                    let iNow = i;
+                    var sc = (function() { successHandler(iNow); });
+                    queue(f).then(sc, errorHandler);
                 }
+                // add callback to queue
+                var f = $.Deferred(function(dfrd) { setTimeout(sendResponse, 3000);});
+                queue(f).then(
+                    function() { console.log("done") }, errorHandler);
+
+                // run queue
             }
         }
         return true;
