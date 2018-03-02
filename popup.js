@@ -7,19 +7,44 @@ function disableButtons() {
     $('#message').text('Running...');
 }
 
-function enableButtons(count) {
+function enableButtons(response) {
     $('#follow_1').prop('disabled',false);
     $('#follow_3').prop('disabled',false);
     $('#follow_10').prop('disabled',false);
-    $('#message').text("Followed: " + count);
+    var s = "";
+    if (response.test_mode) {
+        s += "(TEST) ";
+    }
+    s += "Followed: " + response.count;
+    $('#message').text(s);
 }
 
 function sendClicks(count) {
     disableButtons();
+    let test_mode = $('#test_mode').prop('checked') || false;
+    //console.log("test_mode: " + test_mode);
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {text: 'do_follow', count: count}, function(response) {
+        var json = {
+            text: 'do_follow',
+            count: count,
+            test_mode: test_mode
+        }
+        chrome.tabs.sendMessage(tabs[0].id, json, function(response) {
             console.log("re-enable: " + response.count);
-            enableButtons(response.count);
+            getLinkCount();
+            enableButtons(response);
+        });
+    });
+}
+
+function getLinkCount() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        var json = {
+            text: 'get_count',
+        }
+        chrome.tabs.sendMessage(tabs[0].id, json, function(response) {
+            console.log("link count: " + response.count);
+            $('#link_count').text(response.count);
         });
     });
 }
@@ -27,11 +52,12 @@ function sendClicks(count) {
 document.addEventListener('DOMContentLoaded', function () {
     $('#follow_1').click(function (e) {
         sendClicks(1);
-    })
+    });
     $('#follow_3').click(function (e) {
         sendClicks(3);
-    })
+    });
     $('#follow_10').click(function (e) {
         sendClicks(10);
-    })
+    });
+    getLinkCount();
 });
