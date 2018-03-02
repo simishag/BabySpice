@@ -1,7 +1,7 @@
 {
   "name": "Baby Spice",
   "description": "Simple extension for Poshmark. Allows multiple follows with 1 click.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "manifest_version": 2,
   "permissions": [
     "tabs",

@@ -9,25 +9,36 @@ function dispatchMouseEvent (target, var_args) {
 
 // all of these are necessary
 // ipad/iphone actually do it this way
-function clickFollowButton(element, test, id) {
-    if (test) {
-        console.log("TEST click: " + id);
-    } else {
-        console.log("REAL click");
-        dispatchMouseEvent(element, 'mouseover', true, true);
-        dispatchMouseEvent(element, 'mousedown', true, true);
-        dispatchMouseEvent(element, 'click', true, true);
-        dispatchMouseEvent(element, 'mouseup', true, true);
-    }
+function clickFollowButton(element, test, delay, resolve) {
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    console.log("waiting: " + delay);
+    wait(delay).then(() => {
+        if (test) {
+            console.log("TEST click: " + delay);
+        } else {
+            console.log("REAL click: " + delay);
+            // dispatchMouseEvent(element, 'mouseover', true, true);
+            // dispatchMouseEvent(element, 'mousedown', true, true);
+            // dispatchMouseEvent(element, 'click', true, true);
+            // dispatchMouseEvent(element, 'mouseup', true, true);
+        }
+        resolve();
+    });
+}
+
+function clickResolve(i) {
+    console.log("resolve: " + i);
 }
 
 // listener
 chrome.runtime.onMessage.addListener(
     function (msg, sender, sendResponse) {
+        // could redo this as a switch or fn lookup
         if (msg.text === 'report_back') {
             console.log("sending report back");
             sendResponse(document.all[0].outerHTML);
         }
+
         if (msg.text === 'get_links') {
             var links = $("a[id='follow-user']:not(.f-hide)");
             console.log("links: " + links.length);
@@ -39,33 +50,37 @@ chrome.runtime.onMessage.addListener(
         if (msg.text === 'do_follow') {
             var count = msg.count;
             var links = $("a[id='follow-user']:not(.f-hide)");
+
+            // early return
             if (!links) {
                 console.log("no links found");
-            } else {
-                console.log("links: ", links.length);
-                if (count > links.length) {
-                    console.log("reducing count from " + count + " to " + length);
-                    count = links.length;
-                }
-
-                // create the queue
-                var fns = [];
-                const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-                for (let i = 0; i < count; i++) {
-                    console.log("links[" + i + "]: " + links[i]);
-                    fns.push(function() { wait(i * 1000).then(() => clickFollowButton(links[i], true, i)); });
-                    console.log("added");
-                    //wait(i * 1000).then(() => clickFollowButton(links[i], true, i));
-                }
-                // add callback to end of queue
-                //fns.push(function() { wait(0).then(() => sendResponse());});
-                //fns.push(new Promise(resolve => sendResponse()));
-
-                // run it
-                fns.reduce((p,f) => p.then(f), Promise.resolve()).then(sendResponse);
-                
-                console.log("queue done");
+                sendResponse(0);
             }
+
+            // don't process more links than are available
+            console.log("links: ", links.length);
+            if (count > links.length) {
+                console.log("reducing count from " + count + " to " + length);
+                count = links.length;
+            }
+
+            // create the queue
+            var fns = [];
+            for (let i = 0; i < count; i++) {
+                console.log("links[" + i + "]: " + links[i]);
+                fns.push(new Promise(function(resolve,reject) {
+                    clickFollowButton(links[i], true, i * 1000, resolve);
+                }));
+                console.log("added");
+            }
+
+            let c = count;
+            Promise.all(fns).then(
+                () => sendResponse({count: c}),
+                () => console.log("error") 
+            );
+            
+            console.log("queue done");            
         }
         return true;
     }
