@@ -9,31 +9,16 @@ function dispatchMouseEvent (target, var_args) {
 
 // all of these are necessary
 // ipad/iphone actually do it this way
-function clickFollowButton(element) {
-    dispatchMouseEvent(element, 'mouseover', true, true);
-    dispatchMouseEvent(element, 'mousedown', true, true);
-    dispatchMouseEvent(element, 'click', true, true);
-    dispatchMouseEvent(element, 'mouseup', true, true);
-}
-
-function asyncQueue(stopOnError) {
-    // a resolved promise, which acts as the seed of a .then() chain (ie a "queue").
-    var p = $.when(); 
-    return function(fn) {
-        p = p
-          .then(null, function() { if(!stopOnError) return $.when(); }) // prevent propagation of a previous error down the chain.
-          .then(fn);
-        return p;
+function clickFollowButton(element, test, id) {
+    if (test) {
+        console.log("TEST click: " + id);
+    } else {
+        console.log("REAL click");
+        dispatchMouseEvent(element, 'mouseover', true, true);
+        dispatchMouseEvent(element, 'mousedown', true, true);
+        dispatchMouseEvent(element, 'click', true, true);
+        dispatchMouseEvent(element, 'mouseup', true, true);
     }
-}
-function successHandler(i) {
-    console.log('success: ' + i);
-}
-function errorHandler() {
-    console.log('error:');
-}
-function goodDelay() { // simulate a successful request
-    return $.Deferred(function(dfrd){ setTimeout(dfrd.resolve, 1000); });
 }
 
 // listener
@@ -63,28 +48,23 @@ chrome.runtime.onMessage.addListener(
                     count = links.length;
                 }
 
-                // create queue with increasing timeout
-                var queue = asyncQueue(false);
-                for (i = 0; i < count; i++) {
-                    var randomdelay = Math.ceil(Math.random() * 10) + 1;
-                    var fixeddelay = 3 * i;
-                    var delay = (randomdelay + fixeddelay) * 1000;
-                    console.log("delay: " + delay);
-                    var element = links[i];                    
-                    console.log("element: " + element);
-                    //var f = function() { setTimeout(clickFollowButton, delay, element); }
-                    var f = $.Deferred(function(dfrd) { setTimeout(clickFollowButton, delay, element);});
-                    //funqueue.push(f)
-                    let iNow = i;
-                    var sc = (function() { successHandler(iNow); });
-                    queue(f).then(sc, errorHandler);
+                // create the queue
+                var fns = [];
+                const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+                for (let i = 0; i < count; i++) {
+                    console.log("links[" + i + "]: " + links[i]);
+                    fns.push(function() { wait(i * 1000).then(() => clickFollowButton(links[i], true, i)); });
+                    console.log("added");
+                    //wait(i * 1000).then(() => clickFollowButton(links[i], true, i));
                 }
-                // add callback to queue
-                var f = $.Deferred(function(dfrd) { setTimeout(sendResponse, 3000);});
-                queue(f).then(
-                    function() { console.log("done") }, errorHandler);
+                // add callback to end of queue
+                //fns.push(function() { wait(0).then(() => sendResponse());});
+                //fns.push(new Promise(resolve => sendResponse()));
 
-                // run queue
+                // run it
+                fns.reduce((p,f) => p.then(f), Promise.resolve()).then(sendResponse);
+                
+                console.log("queue done");
             }
         }
         return true;
