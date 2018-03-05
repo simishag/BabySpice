@@ -1,5 +1,5 @@
 // fire specified mouse event
-function dispatchMouseEvent (target, var_args) {
+function dispatchMouseEvent(target, var_args) {
     var e = document.createEvent("MouseEvents");
     // If you need clientX, clientY, etc., you can call
     // initMouseEvent instead of initEvent
@@ -26,7 +26,7 @@ function clickFollowButton(element, test_mode, delay, resolve) {
     });
 }
 
-// listener
+// message listener from popup
 chrome.runtime.onMessage.addListener(
     function (msg, sender, sendResponse) {
         // could redo this as a switch or fn lookup
@@ -37,14 +37,14 @@ chrome.runtime.onMessage.addListener(
 
         if (msg.text === 'get_count') {
             var links = $("a[id='follow-user']:not(.f-hide)");
-            console.log("links: " + links.length);
-            sendResponse({count: links.length});
+            console.log("get_count: " + links.length);
+            sendResponse({ count: links.length });
             //links.each((l) => console.log("href: " + l.href));
         }
 
         if (msg.text === 'get_links') {
             var links = $("a[id='follow-user']:not(.f-hide)");
-            console.log("links: " + links.length);
+            console.log("get_links: " + links.length);
             links.each((l) => console.log("href: " + l.href));
         }
 
@@ -55,7 +55,7 @@ chrome.runtime.onMessage.addListener(
             // early return
             if (!links) {
                 console.log("no links found");
-                sendResponse({count: 0});
+                sendResponse({ count: 0 });
             }
 
             // don't process more links than are available
@@ -70,7 +70,7 @@ chrome.runtime.onMessage.addListener(
             let test_mode = msg.test_mode;
             for (let i = 0; i < count; i++) {
                 console.log("links[" + i + "]: " + links[i]);
-                fns.push(new Promise(function(resolve,reject) {
+                fns.push(new Promise(function (resolve, reject) {
                     clickFollowButton(links[i], test_mode, i * 1000, resolve);
                 }));
                 console.log("added");
@@ -78,11 +78,11 @@ chrome.runtime.onMessage.addListener(
 
             let c = count;
             Promise.all(fns).then(
-                () => sendResponse({count: c, test_mode: test_mode}),
-                () => console.log("error") 
+                () => sendResponse({ count: c, test_mode: test_mode }),
+                () => console.log("error")
             );
-            
-            console.log("queue done");            
+
+            console.log("queue done");
         }
         return true;
     }
