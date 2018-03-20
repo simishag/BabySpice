@@ -7,11 +7,15 @@
     <body style="width: 300px;">
         <h1>Baby Spice</h1>
         <p>Simple extension for Poshmark</p>
-        <input type="checkbox" id="test_mode" name="test_mode">Test Mode</checkbox><br/>
-        <p>Follow Links: <span id="link_count">0</span></p>
+        <input type="checkbox" id="test_mode" name="test_mode">Test Mode (no real clicks)</checkbox><br/>
+        <p>I found <span id="link_count">0</span> "Follow" links</p>
         <button id="follow_1">Follow 1</button>
         <button id="follow_3">Follow 3</button>
-        <button id="follow_10">Follow 10</button>
+        <button id="follow_10">Follow 10</button><p/>
+        <button id="follow_all">Follow ALL</button><p/>
+        Click delay: <input type="text" id="click_delay" name="click_delay" maxlength="4" size="4" value="1.0"/> seconds<br/>
+        Time to wait between clicks<br/>
+        (min 1.0 - max 10.0)<p/>
         <p id="message">Ready!</p>
     </body>
 </html>

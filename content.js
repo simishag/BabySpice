@@ -58,6 +58,11 @@ chrome.runtime.onMessage.addListener(
                 sendResponse({ count: 0 });
             }
 
+            // count=0 means all
+            if (count == 0) {
+                count = links.length;
+            }
+
             // don't process more links than are available
             console.log("links: ", links.length);
             if (count > links.length) {
@@ -70,11 +75,17 @@ chrome.runtime.onMessage.addListener(
             let test_mode = msg.test_mode;
             for (let i = 0; i < count; i++) {
                 console.log("links[" + i + "]: " + links[i]);
+                let delay = msg.delay * i * 1000;
                 fns.push(new Promise(function (resolve, reject) {
-                    clickFollowButton(links[i], test_mode, i * 1000, resolve);
+                    clickFollowButton(links[i], test_mode, delay, resolve);
                 }));
                 console.log("added");
             }
+
+            // hackish but.. add one last delay to allow final click to finish
+            // not sure how else to do this, probably can't get notify on event finish
+            let final_delay = msg.delay * count * 1000;
+            fns.push(new Promise(resolve => setTimeout(resolve, final_delay)));
 
             let c = count;
             Promise.all(fns).then(
